@@ -1,0 +1,17 @@
+[package]
+name = "atomic-interval"
+version = "0.1.0"
+license = "MIT"
+authors = ["Biagio Festa"]
+edition = "2018"
+description = "A tiny implementation of an atomic timer."
+keywords = ["time", "interval", "timer", "atomic", "lock-free"]
+repository = "https://github.com/BiagioFesta/atomic-interval"
+readme = "README.md"
+
+[dependencies]
+quanta = "0.9"
+
+[dev-dependencies]
+num_cpus = "1.13.0"
+test-case = "1.2.1"
