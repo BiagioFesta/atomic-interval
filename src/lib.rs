@@ -255,7 +255,11 @@ mod tests {
 
                 if period < *max {
                     let delay_error = max.as_secs_f64() / period.as_secs_f64() - 1_f64;
-                    println!("Max delay error: {:.3}% with {:?}", delay_error, max);
+                    println!(
+                        "Max delay error: {:.3}% with {:?}",
+                        delay_error * 100_f64,
+                        max
+                    );
                 }
 
                 samples
