@@ -25,6 +25,8 @@
 //! ## AtomicIntervalLight
 //! [`AtomicIntervalLight`] is an [`AtomicInterval`]'s variant that does not guarantee
 //! any memory synchronization.
+#![warn(missing_docs)]
+
 use quanta::Clock;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
