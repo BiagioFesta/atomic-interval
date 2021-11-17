@@ -1,32 +1,61 @@
 # atomic-interval
-A very tiny library implementing an *lock-free* atomic timer.
+A very tiny library implementing a *lock-free* atomic timer.
 
-## Examples
+## Documentation
+[Docs.rs](https://docs.rs/atomic-interval/0.1.0/atomic_interval/)
+
+
+## Example
+
+In the following example, we have a concurrent scenario where multiple threads want to push a data sample towards a single and common entity (e.g., a static function, a multi-referenced object, and so on).
+
+The entity wants to provide a "limiter" mechanism, where it actually processes a sample with a limited frequency. 
+
+Therefore, even if concurrently threads push with a higher frequency, only one sample (coming from one thread) for each period can be actually processed (i.e. printed).
+
+`AtomicInterval` can be used without an additional sync mechanism, as it can already be safely shared across threads.
+
 
 ```rust
 use atomic_interval::AtomicIntervalLight;
-use std::time::Duration;
-use std::time::Instant;
+use once_cell::sync::OnceCell;
 use std::thread;
+use std::time::Duration;
 
-const PERIOD: Duration = Duration::from_secs(1);
+const MAX_PERIOD_SAMPLING: Duration = Duration::from_secs(1);
+
+fn push_sample(id_thread: usize, value: u8) {
+    // Note AtomicInterval can be used without additional
+    // sync wrapper (e.g., a `Mutex`) as it is atomic.
+    static LIMITER: OnceCell<AtomicIntervalLight> = OnceCell::new();
+
+    let limiter_init = || AtomicIntervalLight::new(MAX_PERIOD_SAMPLING);
+
+    // Only one threads can push a sample for each PERIOD.
+    // We limit the samples acquisition with a interval.
+    if LIMITER.get_or_init(limiter_init).is_ticked() {
+        println!("Thread '{}' pushed sample: '{}'", id_thread, value);
+    }
+}
 
 fn main() {
-    let atomic_interval = AtomicIntervalLight::new(PERIOD);
-    let time_start = Instant::now();
+    let num_threads = num_cpus::get();
 
-    let elapsed = loop {
-        if atomic_interval.is_ticked() {
-            break time_start.elapsed();
-        }
+    (0..num_threads)
+        .map(|id_thread| {
+            thread::spawn(move || loop {
+                let sample = rand::random();
 
-        thread::sleep(Duration::from_millis(1));
-    };
+                // Multiple threads concurrently try to push a sample.
+                push_sample(id_thread, sample);
 
-    println!("Elapsed: {:.2?}", elapsed);  // Elapsed: 1.00s
+                thread::sleep(Duration::from_millis(1));
+            })
+        })
+        .collect::<Vec<_>>()
+        .into_iter()
+        .for_each(|join_handle| join_handle.join().unwrap());
 }
-```
 
 ```
-cargo run --example simple
-```
+
