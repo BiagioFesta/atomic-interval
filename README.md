@@ -2,7 +2,7 @@
 A very tiny library implementing a *lock-free* atomic timer.
 
 ## Documentation
-[Docs.rs](https://docs.rs/atomic-interval/0.1.1/atomic_interval/)
+[Docs.rs](https://docs.rs/atomic-interval/0.1.2/atomic_interval/)
 
 
 ## Example
