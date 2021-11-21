@@ -1,7 +1,7 @@
 [package]
 name = "atomic-interval"
 version = "0.1.1"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 authors = ["Biagio Festa"]
 edition = "2018"
 description = "A tiny implementation of an atomic timer."
