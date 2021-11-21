@@ -2,9 +2,9 @@
 //!
 //! ## Example
 //! ```
+//! use atomic_interval::AtomicIntervalLight;
 //! use std::time::Duration;
 //! use std::time::Instant;
-//! use atomic_interval::AtomicIntervalLight;
 //!
 //! let period = Duration::from_secs(1);
 //! let atomic_interval = AtomicIntervalLight::new(period);
@@ -80,10 +80,10 @@ impl AtomicInterval {
     ///
     /// # Example
     /// ```
+    /// use atomic_interval::AtomicInterval;
+    /// use std::sync::atomic::Ordering;
     /// use std::time::Duration;
     /// use std::time::Instant;
-    /// use std::sync::atomic::Ordering;
-    /// use atomic_interval::AtomicInterval;
     ///
     /// let atomic_interval = AtomicInterval::new(Duration::from_secs(1));
     /// let time_start = Instant::now();
