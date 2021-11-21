@@ -11,7 +11,7 @@ In the following example, we have a concurrent scenario where multiple threads w
 
 The entity wants to provide a "limiter" mechanism, where it actually processes a sample with a limited frequency. 
 
-Therefore, even if concurrently threads push with a higher frequency, only one sample (coming from one thread) for each period can be actually processed (i.e. printed).
+Therefore, even if concurrently threads push with a higher frequency, only one sample (coming from one thread) for each period can be actually processed (i.e., printed).
 
 `AtomicInterval` can be used without an additional sync mechanism, as it can already be safely shared across threads.
 
