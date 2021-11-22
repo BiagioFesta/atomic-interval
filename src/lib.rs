@@ -59,6 +59,11 @@ impl AtomicInterval {
         }
     }
 
+    /// The period set for this interval.
+    pub fn period(&self) -> Duration {
+        self.inner.period()
+    }
+
     /// Changes the period of this interval.
     pub fn set_period(&mut self, period: Duration) {
         self.inner.set_period(period)
@@ -129,6 +134,11 @@ impl AtomicIntervalLight {
         }
     }
 
+    /// The period set for this interval.
+    pub fn period(&self) -> Duration {
+        self.inner.period()
+    }
+
     /// Changes the period of this interval.
     pub fn set_period(&mut self, period: Duration) {
         self.inner.set_period(period)
@@ -163,6 +173,11 @@ impl AtomicIntervalImpl {
     #[inline(always)]
     fn set_period(&mut self, period: Duration) {
         self.period = period
+    }
+
+    #[inline(always)]
+    fn period(&self) -> Duration {
+        self.period
     }
 
     #[inline(always)]
