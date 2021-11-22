@@ -55,7 +55,7 @@ impl AtomicInterval {
     /// amount of time has to elapsed for the first tick.
     pub fn new(period: Duration) -> Self {
         Self {
-            inner: AtomicIntervalImpl::new(period, false),
+            inner: AtomicIntervalImpl::new(period),
         }
     }
 
@@ -125,7 +125,7 @@ impl AtomicIntervalLight {
     /// Creates a new [`AtomicIntervalLight`] with a fixed period interval.
     pub fn new(period: Duration) -> Self {
         Self {
-            inner: AtomicIntervalImpl::new(period, false),
+            inner: AtomicIntervalImpl::new(period),
         }
     }
 
@@ -149,13 +149,9 @@ struct AtomicIntervalImpl {
 }
 
 impl AtomicIntervalImpl {
-    fn new(period: Duration, first_tick_immediately: bool) -> Self {
+    fn new(period: Duration) -> Self {
         let clock = Clock::new();
-        let last_tick = AtomicU64::new(if first_tick_immediately {
-            0
-        } else {
-            clock.start()
-        });
+        let last_tick = AtomicU64::new(clock.start());
 
         Self {
             period,
@@ -200,101 +196,46 @@ impl AtomicIntervalImpl {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utilities::stress_timer_mt;
 
-    #[test_case::test_case(Ordering::SeqCst, Ordering::SeqCst ; "SeqCst")]
-    #[test_case::test_case(Ordering::Relaxed, Ordering::Relaxed ; "Relaxed")]
-    fn test_stress_timer_strong_mt(success: Ordering, failure: Ordering) {
-        stress_timer_mt::<false>(10, success, failure);
-    }
-
-    #[test_case::test_case(Ordering::SeqCst, Ordering::SeqCst ; "SeqCst")]
-    #[test_case::test_case(Ordering::Relaxed, Ordering::Relaxed ; "Relaxed")]
-    fn test_stress_timer_weak_mt(success: Ordering, failure: Ordering) {
-        stress_timer_mt::<true>(10, success, failure);
+    #[test]
+    fn test_ticks() {
+        utilities::test_ticks_impl::<false>();
+        utilities::test_ticks_impl::<true>();
     }
 
     mod utilities {
         use super::*;
-        use std::sync::mpsc;
-        use std::sync::Arc;
-        use std::sync::Barrier;
 
-        pub(super) fn stress_timer_mt<const WEAK_CMP: bool>(
-            num_iter: usize,
-            success: Ordering,
-            failure: Ordering,
-        ) {
-            let num_threads = num_cpus::get();
-            let num_samples = 1000;
-            let period = Duration::from_millis(1);
-            let atomic_interval = Arc::new(AtomicIntervalImpl::new(period, false));
-            let barrier_start = Arc::new(Barrier::new(num_threads));
+        pub(super) fn test_ticks_impl<const WEAK_CMP: bool>() {
+            const NUM_TICKS: usize = 10;
+            const ERROR_TOLLERANCE: f64 = 0.001;
 
-            for _ in 0..num_iter {
-                let (samples_sender, samples_receiver) = mpsc::channel();
+            let period = Duration::from_millis(10);
+            let atomic_interval = AtomicIntervalImpl::new(period);
 
-                #[allow(clippy::needless_collect)]
-                let threads = (0..num_threads)
-                    .map(|_| {
-                        let atomic_interval = atomic_interval.clone();
-                        let samples_sender = samples_sender.clone();
-                        let barrier_start = barrier_start.clone();
+            for _ in 0..NUM_TICKS {
+                let elapsed = wait_for_atomic_interval::<WEAK_CMP>(&atomic_interval);
+                assert!(period <= elapsed);
 
-                        std::thread::spawn(move || {
-                            barrier_start.wait();
+                let error = elapsed.as_secs_f64() / period.as_secs_f64() - 1_f64;
+                assert!(
+                    error <= ERROR_TOLLERANCE,
+                    "Delay error {:.3}% (max: {:.3}%)",
+                    error * 100_f64,
+                    ERROR_TOLLERANCE * 100_f64
+                );
+            }
+        }
 
-                            loop {
-                                let sample = loop {
-                                    let (ticked, elapsed) =
-                                        atomic_interval.is_ticked::<WEAK_CMP>(success, failure);
-                                    if ticked {
-                                        break elapsed;
-                                    }
-                                };
-
-                                if samples_sender.send(sample).is_err() {
-                                    break;
-                                }
-                            }
-                        })
-                    })
-                    .collect::<Vec<_>>();
-
-                let mut samples = Vec::with_capacity(num_samples);
-                while samples.len() < num_samples {
-                    samples.push(samples_receiver.recv().unwrap());
+        fn wait_for_atomic_interval<const WEAK_CMP: bool>(
+            atomic_interval: &AtomicIntervalImpl,
+        ) -> Duration {
+            loop {
+                let (ticked, elapsed) =
+                    atomic_interval.is_ticked::<WEAK_CMP>(Ordering::Relaxed, Ordering::Relaxed);
+                if ticked {
+                    break elapsed;
                 }
-
-                drop(samples_receiver);
-                threads
-                    .into_iter()
-                    .for_each(|join_handle| join_handle.join().unwrap());
-
-                let min = samples.iter().min().unwrap();
-                let max = samples.iter().max().unwrap();
-
-                if *min < period {
-                    let anticip_error = 1_f64 - min.as_secs_f64() / period.as_secs_f64();
-                    println!(
-                        "Max anticipation error: {:.3}% with {:?}",
-                        anticip_error * 100_f64,
-                        min
-                    );
-                }
-
-                if period < *max {
-                    let delay_error = max.as_secs_f64() / period.as_secs_f64() - 1_f64;
-                    println!(
-                        "Max delay error: {:.3}% with {:?}",
-                        delay_error * 100_f64,
-                        max
-                    );
-                }
-
-                samples
-                    .iter()
-                    .for_each(|elapsed| assert!(*elapsed >= period));
             }
         }
     }
