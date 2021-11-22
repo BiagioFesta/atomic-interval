@@ -223,7 +223,7 @@ mod tests {
 
         pub(super) fn test_ticks_impl<const WEAK_CMP: bool>() {
             const NUM_TICKS: usize = 10;
-            const ERROR_TOLLERANCE: f64 = 0.001;
+            const ERROR_TOLERANCE: f64 = 0.03; // 3%
 
             let period = Duration::from_millis(10);
             let atomic_interval = AtomicIntervalImpl::new(period);
@@ -234,10 +234,10 @@ mod tests {
 
                 let error = elapsed.as_secs_f64() / period.as_secs_f64() - 1_f64;
                 assert!(
-                    error <= ERROR_TOLLERANCE,
-                    "Delay error {:.3}% (max: {:.3}%)",
+                    error <= ERROR_TOLERANCE,
+                    "Delay error {:.1}% (max: {:.1}%)",
                     error * 100_f64,
-                    ERROR_TOLLERANCE * 100_f64
+                    ERROR_TOLERANCE * 100_f64
                 );
             }
         }
