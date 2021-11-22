@@ -1,4 +1,8 @@
 # atomic-interval
+[![crates.io](https://img.shields.io/crates/v/atomic-interval.svg)](https://crates.io/crates/atomic-interval)
+[![docs.rs](https://docs.rs/atomic-interval/badge.svg)](https://docs.rs/atomic-interval)
+[![Build](https://github.com/BiagioFesta/atomic-interval/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/BiagioFesta/atomic-interval/actions/workflows/rust.yml)
+
 A very tiny library implementing a *lock-free* atomic timer.
 
 ## Documentation
