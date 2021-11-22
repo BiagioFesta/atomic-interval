@@ -50,15 +50,22 @@ pub struct AtomicInterval {
 
 impl AtomicInterval {
     /// Creates a new [`AtomicInterval`] with a fixed period interval.
+    ///
     /// The first tick is not instantaneous at the creation of the interval. It means `period`
     /// amount of time has to elapsed for the first tick.
     pub fn new(period: Duration) -> Self {
         Self {
-            inner: AtomicIntervalImpl::new(period),
+            inner: AtomicIntervalImpl::new(period, false),
         }
     }
 
+    /// Changes the period of this interval.
+    pub fn set_period(&mut self, period: Duration) {
+        self.inner.set_period(period)
+    }
+
     /// Checks whether the interval's tick expired.
+    ///
     /// When it returns `true` then *at least* `period` amount of time has passed
     /// since the last tick.
     ///
@@ -118,8 +125,13 @@ impl AtomicIntervalLight {
     /// Creates a new [`AtomicIntervalLight`] with a fixed period interval.
     pub fn new(period: Duration) -> Self {
         Self {
-            inner: AtomicIntervalImpl::new(period),
+            inner: AtomicIntervalImpl::new(period, false),
         }
+    }
+
+    /// Changes the period of this interval.
+    pub fn set_period(&mut self, period: Duration) {
+        self.inner.set_period(period)
     }
 
     /// See [`AtomicInterval::is_ticked`].
@@ -137,15 +149,24 @@ struct AtomicIntervalImpl {
 }
 
 impl AtomicIntervalImpl {
-    fn new(period: Duration) -> Self {
+    fn new(period: Duration, first_tick_immediately: bool) -> Self {
         let clock = Clock::new();
-        let last_tick = AtomicU64::new(clock.start());
+        let last_tick = AtomicU64::new(if first_tick_immediately {
+            0
+        } else {
+            clock.start()
+        });
 
         Self {
             period,
             clock,
             last_tick,
         }
+    }
+
+    #[inline(always)]
+    fn set_period(&mut self, period: Duration) {
+        self.period = period
     }
 
     #[inline(always)]
@@ -207,7 +228,7 @@ mod tests {
             let num_threads = num_cpus::get();
             let num_samples = 1000;
             let period = Duration::from_millis(1);
-            let atomic_interval = Arc::new(AtomicIntervalImpl::new(period));
+            let atomic_interval = Arc::new(AtomicIntervalImpl::new(period, false));
             let barrier_start = Arc::new(Barrier::new(num_threads));
 
             for _ in 0..num_iter {
