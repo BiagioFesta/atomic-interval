@@ -161,7 +161,7 @@ struct AtomicIntervalImpl {
 impl AtomicIntervalImpl {
     fn new(period: Duration) -> Self {
         let clock = Clock::new();
-        let last_tick = AtomicU64::new(clock.start());
+        let last_tick = AtomicU64::new(clock.raw());
 
         Self {
             period,
@@ -187,18 +187,18 @@ impl AtomicIntervalImpl {
         failure: Ordering,
     ) -> (bool, Duration) {
         let current = self.last_tick.load(failure);
-        let elapsed = self.clock.delta(current, self.clock.end());
+        let elapsed = self.clock.delta(current, self.clock.raw());
 
         if self.period <= elapsed
             && ((!WEAK_CMP
                 && self
                     .last_tick
-                    .compare_exchange(current, self.clock.start(), success, failure)
+                    .compare_exchange(current, self.clock.raw(), success, failure)
                     .is_ok())
                 || (WEAK_CMP
                     && self
                         .last_tick
-                        .compare_exchange_weak(current, self.clock.start(), success, failure)
+                        .compare_exchange_weak(current, self.clock.raw(), success, failure)
                         .is_ok()))
         {
             (true, elapsed)

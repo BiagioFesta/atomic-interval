@@ -10,9 +10,9 @@ repository = "https://github.com/BiagioFesta/atomic-interval"
 readme = "README.md"
 
 [dependencies]
-quanta = "0.9"
+quanta = "0.12.2"
 
 [dev-dependencies]
-num_cpus = "1.13.0"
-once_cell = "1.8.0"
-rand = "0.8.4"
+num_cpus = "1.16.0"
+once_cell = "1.19.0"
+rand = "0.8.5"
